@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
 
   const apiKey = process.env.WEATHER_API_KEY;
   if (!apiKey) {
+    console.log("[v0] WEATHER_API_KEY not set, returning fallback data");
     return NextResponse.json(getFallbackWeather());
   }
 

@@ -32,25 +32,42 @@ export async function POST(request: NextRequest) {
     }
 
     const model = "gemini-2.0-flash";
+    const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
+    const body = JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 1024,
+      },
+    });
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
-      {
+    let res: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          },
-        }),
-      }
-    );
+        body,
+      });
 
-    if (!res.ok) {
-      const errorData = await res.text();
+      if (res.status === 429 && attempt < 2) {
+        // Rate limited - wait and retry
+        await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 2000));
+        continue;
+      }
+      break;
+    }
+
+    if (!res || !res.ok) {
+      const errorData = res ? await res.text() : "No response";
       console.error("Gemini API error:", errorData);
+
+      if (res?.status === 429) {
+        return NextResponse.json({
+          response:
+            "The AI service is currently rate-limited due to high usage on the free tier. Please wait a minute and try again, or upgrade your Gemini API plan for higher limits.",
+        });
+      }
+
       return NextResponse.json({
         response:
           "I'm having trouble connecting to the AI service right now. Please check that your GEMINI_API_KEY is valid, or try again in a moment.",

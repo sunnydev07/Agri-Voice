@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
-      { error: "Gemini API key not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      response:
+        "The Gemini API key is not configured yet. Please add your GEMINI_API_KEY in the Vars section of the sidebar to enable AI responses. In the meantime, I can tell you that Agri-Voice is designed to help with crop management, disease identification, soil health, weather, and government farming schemes!",
+    });
   }
 
   try {
@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const model = image ? "gemini-1.5-flash" : "gemini-1.5-flash";
+    const model = "gemini-2.0-flash";
 
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,7 +51,10 @@ export async function POST(request: NextRequest) {
     if (!res.ok) {
       const errorData = await res.text();
       console.error("Gemini API error:", errorData);
-      throw new Error(`Gemini API error: ${res.status}`);
+      return NextResponse.json({
+        response:
+          "I'm having trouble connecting to the AI service right now. Please check that your GEMINI_API_KEY is valid, or try again in a moment.",
+      });
     }
 
     const data = await res.json();
@@ -62,9 +65,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ response: text });
   } catch (error) {
     console.error("Chat API error:", error);
-    return NextResponse.json(
-      { error: "Failed to get AI response" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      response:
+        "Something went wrong while processing your request. Please try again.",
+    });
   }
 }

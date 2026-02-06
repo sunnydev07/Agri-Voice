@@ -35,6 +35,7 @@ export function VoiceAIChat() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>("Thinking...");
   const [isListening, setIsListening] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -118,38 +119,70 @@ export function VoiceAIChat() {
     setInput("");
     setImagePreview(null);
     setLoading(true);
+    setLoadingStatus("Thinking...");
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userMessage.content,
-          image: userMessage.image || null,
-        }),
-      });
+    const MAX_CLIENT_RETRIES = 3;
+    let success = false;
 
-      const data = await res.json();
+    for (let attempt = 0; attempt < MAX_CLIENT_RETRIES; attempt++) {
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: userMessage.content,
+            image: userMessage.image || null,
+          }),
+        });
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.response || data.error || "Sorry, I could not process that.",
-      };
+        const data = await res.json();
 
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
+        // If the server exhausted its retries and flagged rate limiting,
+        // we retry from the client side with a visible status
+        if (data.rateLimited && attempt < MAX_CLIENT_RETRIES - 1) {
+          const waitSec = Math.min(15 * (attempt + 1), 45);
+          setLoadingStatus(
+            `API busy, retrying in ${waitSec}s (attempt ${attempt + 2}/${MAX_CLIENT_RETRIES})...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
+          continue;
+        }
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: data.response || data.error || "Sorry, I could not process that.",
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+        success = true;
+        break;
+      } catch {
+        if (attempt < MAX_CLIENT_RETRIES - 1) {
+          const waitSec = 5 * (attempt + 1);
+          setLoadingStatus(
+            `Connection issue, retrying in ${waitSec}s (attempt ${attempt + 2}/${MAX_CLIENT_RETRIES})...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
+          continue;
+        }
+      }
+    }
+
+    if (!success) {
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: "I am having trouble connecting. Please try again.",
+          content:
+            "The AI service is very busy right now. Please wait a minute and try again.",
         },
       ]);
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
+    setLoadingStatus("Thinking...");
   };
 
   const speakText = (text: string) => {
@@ -261,7 +294,9 @@ export function VoiceAIChat() {
                 <div className="flex justify-start">
                   <div className="glass-subtle flex items-center gap-2 rounded-2xl rounded-bl-md px-4 py-3">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span className="text-xs text-muted-foreground">Thinking...</span>
+                    <span className="text-xs text-muted-foreground">
+                      {loadingStatus}
+                    </span>
                   </div>
                 </div>
               )}

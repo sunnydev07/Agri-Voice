@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     const model = "gemini-2.0-flash";
     const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
-    const body = JSON.stringify({
+    const payload = JSON.stringify({
       contents: [{ parts }],
       generationConfig: {
         temperature: 0.7,
@@ -41,32 +41,61 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    let res: Response | null = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      res = await fetch(url, {
+    const MAX_RETRIES = 4;
+    let lastError = "";
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body,
+        body: payload,
       });
 
-      if (res.status === 429 && attempt < 2) {
-        // Rate limited - wait and retry
-        await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 2000));
-        continue;
+      // Success path
+      if (res.ok) {
+        const data = await res.json();
+        const text =
+          data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+          "I apologize, I could not generate a response. Please try again.";
+        return NextResponse.json({ response: text });
       }
-      break;
-    }
 
-    if (!res || !res.ok) {
-      const errorData = res ? await res.text() : "No response";
+      // Rate-limited -- exponential backoff with server hint
+      if (res.status === 429) {
+        const errorBody = await res.text();
+        lastError = errorBody;
+
+        // Parse server-suggested retry delay if available
+        let serverDelay = 0;
+        try {
+          const parsed = JSON.parse(errorBody);
+          const retryInfo = parsed?.error?.details?.find(
+            (d: { "@type": string }) => d["@type"]?.includes("RetryInfo")
+          );
+          if (retryInfo?.retryDelay) {
+            serverDelay = Number.parseInt(retryInfo.retryDelay, 10) || 0;
+          }
+        } catch {
+          // Ignore parse errors
+        }
+
+        // Exponential backoff: 1s, 2s, 4s, 8s -- but respect server hint if larger
+        const backoffMs = Math.max(1000 * 2 ** attempt, serverDelay * 1000);
+        // Cap at 30 seconds to avoid Vercel function timeout
+        const delayMs = Math.min(backoffMs, 30000);
+
+        if (attempt < MAX_RETRIES - 1) {
+          console.log(
+            `[v0] Gemini 429 - retry ${attempt + 1}/${MAX_RETRIES - 1}, waiting ${delayMs}ms`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue;
+        }
+      }
+
+      // Non-429 error
+      const errorData = await res.text();
       console.error("Gemini API error:", errorData);
-
-      if (res?.status === 429) {
-        return NextResponse.json({
-          response:
-            "The AI service is currently rate-limited due to high usage on the free tier. Please wait a minute and try again, or upgrade your Gemini API plan for higher limits.",
-        });
-      }
 
       return NextResponse.json({
         response:
@@ -74,12 +103,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const data = await res.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "I apologize, I could not generate a response. Please try again.";
-
-    return NextResponse.json({ response: text });
+    // All retries exhausted on 429
+    console.error("Gemini API rate limit exhausted after retries:", lastError);
+    return NextResponse.json({
+      response:
+        "The AI service is very busy right now due to free-tier rate limits. Please wait about 30-60 seconds before trying again, or consider upgrading your Gemini API plan for higher limits.",
+      rateLimited: true,
+    });
   } catch (error) {
     console.error("Chat API error:", error);
     return NextResponse.json({

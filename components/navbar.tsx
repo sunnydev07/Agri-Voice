@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
 import {
   Search,
   Leaf,
@@ -10,6 +11,9 @@ import {
   Sun,
   ThermometerSun,
   Loader2,
+  Bug,
+  Mic,
+  TrendingUp,
 } from "lucide-react";
 
 interface CropResult {
@@ -84,7 +88,30 @@ export function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <nav className="hidden items-center gap-1 md:flex">
+              <Link
+                href="/disease-scanner"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Bug className="h-3.5 w-3.5" />
+                Scanner
+              </Link>
+              <Link
+                href="/voice-assistant"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
+              >
+                <Mic className="h-3.5 w-3.5" />
+                Voice AI
+              </Link>
+              <Link
+                href="/market-prices"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-muted-foreground transition-all hover:bg-chart-5/10 hover:text-chart-5"
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                Prices
+              </Link>
+            </nav>
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
@@ -93,7 +120,7 @@ export function Navbar() {
               <Search className="h-4 w-4" />
               <span className="hidden md:inline">Search crops...</span>
             </button>
-            <div className="hidden items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 md:flex">
+            <div className="hidden items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 lg:flex">
               <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
               <span className="font-mono text-xs text-primary">AI Active</span>
             </div>

@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import {
   Bug,
   CloudSun,
   FlaskConical,
   Landmark,
-  Sprout,
+  Mic,
   TrendingUp,
 } from "lucide-react";
 
@@ -16,34 +17,15 @@ const actions = [
     icon: Bug,
     color: "text-destructive",
     bg: "bg-destructive/10",
+    href: "/disease-scanner",
   },
   {
-    label: "Weather Forecast",
-    description: "7-day local weather prediction",
-    icon: CloudSun,
-    color: "text-chart-3",
-    bg: "bg-chart-3/10",
-  },
-  {
-    label: "Soil Analysis",
-    description: "AI-powered soil health insights",
-    icon: FlaskConical,
-    color: "text-accent",
-    bg: "bg-accent/10",
-  },
-  {
-    label: "Govt. Schemes",
-    description: "Latest subsidies & programs",
-    icon: Landmark,
+    label: "Voice Assistant",
+    description: "Ask farming questions by voice",
+    icon: Mic,
     color: "text-primary",
     bg: "bg-primary/10",
-  },
-  {
-    label: "Crop Planner",
-    description: "Seasonal planting calendar",
-    icon: Sprout,
-    color: "text-chart-4",
-    bg: "bg-chart-4/10",
+    href: "/voice-assistant",
   },
   {
     label: "Market Prices",
@@ -51,6 +33,31 @@ const actions = [
     icon: TrendingUp,
     color: "text-chart-5",
     bg: "bg-chart-5/10",
+    href: "/market-prices",
+  },
+  {
+    label: "Weather Forecast",
+    description: "7-day local weather prediction",
+    icon: CloudSun,
+    color: "text-chart-3",
+    bg: "bg-chart-3/10",
+    href: null,
+  },
+  {
+    label: "Soil Analysis",
+    description: "AI-powered soil health insights",
+    icon: FlaskConical,
+    color: "text-accent",
+    bg: "bg-accent/10",
+    href: null,
+  },
+  {
+    label: "Govt. Schemes",
+    description: "Latest subsidies & programs",
+    icon: Landmark,
+    color: "text-chart-4",
+    bg: "bg-chart-4/10",
+    href: null,
   },
 ];
 
@@ -59,21 +66,42 @@ export function QuickActions() {
     <div className="glass rounded-2xl p-6">
       <h2 className="mb-4 text-lg font-semibold text-foreground">Quick Actions</h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            className="glass-subtle group flex flex-col items-start gap-2 rounded-xl p-4 text-left transition-all hover:glow-green"
-          >
-            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${action.bg} transition-transform group-hover:scale-110`}>
-              <action.icon className={`h-5 w-5 ${action.color}`} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">{action.label}</p>
-              <p className="text-[11px] text-muted-foreground">{action.description}</p>
-            </div>
-          </button>
-        ))}
+        {actions.map((action) => {
+          const content = (
+            <>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${action.bg} transition-transform group-hover:scale-110`}>
+                <action.icon className={`h-5 w-5 ${action.color}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">{action.label}</p>
+                <p className="text-[11px] text-muted-foreground">{action.description}</p>
+              </div>
+            </>
+          );
+
+          if (action.href) {
+            return (
+              <Link
+                key={action.label}
+                href={action.href}
+                className="glass-subtle group flex flex-col items-start gap-2 rounded-xl p-4 text-left transition-all hover:glow-green"
+              >
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={action.label}
+              type="button"
+              className="glass-subtle group flex flex-col items-start gap-2 rounded-xl p-4 text-left opacity-60 transition-all"
+            >
+              {content}
+              <span className="text-[9px] text-muted-foreground">Coming soon</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

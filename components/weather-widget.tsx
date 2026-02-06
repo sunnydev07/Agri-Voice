@@ -38,6 +38,7 @@ interface WeatherData {
       weather: Array<{ main: string; description: string }>;
     }>;
   } | null;
+  _fallback?: boolean;
 }
 
 function getWeatherIcon(main: string) {
@@ -156,7 +157,14 @@ export function WeatherWidget() {
   return (
     <div className="glass glow-green rounded-2xl p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Weather & Soil Health</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-foreground">Weather & Soil Health</h2>
+          {data._fallback && (
+            <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-medium text-accent">
+              Demo
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <MapPin className="h-3.5 w-3.5" />
           {weather.name}, {weather.sys.country}

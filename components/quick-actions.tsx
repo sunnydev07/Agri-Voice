@@ -5,9 +5,10 @@ import {
   Bug,
   CloudSun,
   FlaskConical,
-  Landmark,
   Mic,
   TrendingUp,
+  Users,
+  Landmark,
 } from "lucide-react";
 
 const actions = [
@@ -52,12 +53,12 @@ const actions = [
     href: null,
   },
   {
-    label: "Govt. Schemes",
-    description: "Latest subsidies & programs",
-    icon: Landmark,
+    label: "Community Hub",
+    description: "Chat, pay & call farmers",
+    icon: Users,
     color: "text-chart-4",
     bg: "bg-chart-4/10",
-    href: null,
+    href: "/community",
   },
 ];
 

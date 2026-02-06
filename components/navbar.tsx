@@ -14,6 +14,7 @@ import {
   Bug,
   Mic,
   TrendingUp,
+  Users,
 } from "lucide-react";
 
 interface CropResult {
@@ -110,6 +111,13 @@ export function Navbar() {
               >
                 <TrendingUp className="h-3.5 w-3.5" />
                 Prices
+              </Link>
+              <Link
+                href="/community"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-muted-foreground transition-all hover:bg-chart-4/10 hover:text-chart-4"
+              >
+                <Users className="h-3.5 w-3.5" />
+                Community
               </Link>
             </nav>
             <button

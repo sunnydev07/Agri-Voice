@@ -60,11 +60,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ response: text });
       }
 
+      // Read body once to avoid "Body already read" error
+      const errorBody = await res.text();
+      lastError = errorBody;
+
       // Rate-limited -- exponential backoff with server hint
       if (res.status === 429) {
-        const errorBody = await res.text();
-        lastError = errorBody;
-
         // Parse server-suggested retry delay if available
         let serverDelay = 0;
         try {
@@ -91,11 +92,13 @@ export async function POST(request: NextRequest) {
           await new Promise((resolve) => setTimeout(resolve, delayMs));
           continue;
         }
+
+        // Last 429 attempt falls through to the exhausted handler below
+        continue;
       }
 
-      // Non-429 error
-      const errorData = await res.text();
-      console.error("Gemini API error:", errorData);
+      // Non-429 error -- no retry, return immediately
+      console.error("Gemini API error:", errorBody);
 
       return NextResponse.json({
         response:

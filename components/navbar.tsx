@@ -19,18 +19,31 @@ import {
 
 interface CropResult {
   id: string;
+  source?: string;
   attributes: {
     name: string;
+    scientificName?: string;
     description: string;
     sun_requirements: string;
     sowing_method: string;
-    row_spacing: { value: number; unit: string } | null;
-    height: { value: number; unit: string } | null;
-    spread: { value: number; unit: string } | null;
-    growing_degree_days: number | null;
+    row_spacing: string | null;
+    growing_degree_days: string | null;
+    water_requirements?: string;
+    season?: string;
     main_image_path: string | null;
+    wiki_url?: string;
+    price_keyword?: string;
     tags_array: string[];
   };
+}
+
+interface PriceRecord {
+  state: string;
+  market: string;
+  commodity: string;
+  modal_price: string;
+  min_price: string;
+  max_price: string;
 }
 
 export function Navbar() {
@@ -39,6 +52,8 @@ export function Navbar() {
   const [results, setResults] = useState<CropResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCrop, setSelectedCrop] = useState<CropResult | null>(null);
+  const [priceData, setPriceData] = useState<PriceRecord[]>([]);
+  const [priceLoading, setPriceLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -64,6 +79,35 @@ export function Navbar() {
       inputRef.current.focus();
     }
   }, [searchOpen]);
+
+  const fetchCropPrice = useCallback(async (keyword: string) => {
+    if (!keyword) return;
+    setPriceLoading(true);
+    setPriceData([]);
+    try {
+      const res = await fetch(
+        `/api/market-prices?commodity=${encodeURIComponent(keyword)}`
+      );
+      const data = await res.json();
+      const records: PriceRecord[] = (data.records || []).filter(
+        (r: PriceRecord) =>
+          r.commodity.toLowerCase().includes(keyword.toLowerCase())
+      );
+      setPriceData(records.slice(0, 5));
+    } catch {
+      setPriceData([]);
+    } finally {
+      setPriceLoading(false);
+    }
+  }, []);
+
+  const handleSelectCrop = useCallback(
+    (crop: CropResult) => {
+      setSelectedCrop(crop);
+      fetchCropPrice(crop.attributes.price_keyword || crop.attributes.name);
+    },
+    [fetchCropPrice]
+  );
 
   const handleInputChange = (value: string) => {
     setQuery(value);
@@ -146,6 +190,7 @@ export function Navbar() {
               setQuery("");
               setResults([]);
               setSelectedCrop(null);
+              setPriceData([]);
             }}
             onKeyDown={() => {}}
             role="presentation"
@@ -169,6 +214,7 @@ export function Navbar() {
                   setQuery("");
                   setResults([]);
                   setSelectedCrop(null);
+                  setPriceData([]);
                 }}
                 className="rounded-lg p-1 text-muted-foreground transition-colors hover:text-foreground"
               >
@@ -178,39 +224,56 @@ export function Navbar() {
 
             {/* Selected Crop Detail */}
             {selectedCrop && (
-              <div className="border-t border-border/50 p-4">
+              <div className="max-h-[70vh] overflow-y-auto border-t border-border/50 p-4">
                 <button
                   type="button"
-                  onClick={() => setSelectedCrop(null)}
+                  onClick={() => { setSelectedCrop(null); setPriceData([]); }}
                   className="mb-3 text-xs text-primary hover:underline"
                 >
-                  Back to results
+                  &larr; Back to results
                 </button>
+
+                {/* Header */}
                 <div className="flex gap-4">
-                  {selectedCrop.attributes.main_image_path && (
-                    <img
-                      src={selectedCrop.attributes.main_image_path || "/placeholder.svg"}
-                      alt={selectedCrop.attributes.name}
-                      className="h-24 w-24 rounded-xl object-cover"
-                    />
-                  )}
-                  <div className="flex-1">
+                  <img
+                    src={selectedCrop.attributes.main_image_path || `https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&q=80`}
+                    alt={selectedCrop.attributes.name}
+                    className="h-28 w-28 flex-shrink-0 rounded-xl object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-foreground">
                       {selectedCrop.attributes.name}
                     </h3>
+                    {selectedCrop.attributes.scientificName && (
+                      <p className="text-xs italic text-muted-foreground">
+                        {selectedCrop.attributes.scientificName}
+                      </p>
+                    )}
                     {selectedCrop.attributes.description && (
-                      <p className="mt-1 text-sm text-muted-foreground line-clamp-3">
+                      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground line-clamp-3">
                         {selectedCrop.attributes.description}
                       </p>
                     )}
+                    {selectedCrop.attributes.wiki_url && (
+                      <a
+                        href={selectedCrop.attributes.wiki_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        Learn more on Wikipedia &rarr;
+                      </a>
+                    )}
                   </div>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+
+                {/* Growing Info */}
+                <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
                   {selectedCrop.attributes.sun_requirements && (
                     <div className="glass rounded-xl p-3">
                       <Sun className="mb-1 h-4 w-4 text-accent" />
-                      <p className="text-xs text-muted-foreground">Sunlight</p>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-[10px] text-muted-foreground">Sunlight</p>
+                      <p className="text-xs font-medium text-foreground">
                         {selectedCrop.attributes.sun_requirements}
                       </p>
                     </div>
@@ -218,32 +281,41 @@ export function Navbar() {
                   {selectedCrop.attributes.sowing_method && (
                     <div className="glass rounded-xl p-3">
                       <Sprout className="mb-1 h-4 w-4 text-primary" />
-                      <p className="text-xs text-muted-foreground">Sowing</p>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-[10px] text-muted-foreground">Sowing</p>
+                      <p className="text-xs font-medium text-foreground">
                         {selectedCrop.attributes.sowing_method}
                       </p>
                     </div>
                   )}
-                  {selectedCrop.attributes.row_spacing?.value && (
+                  {selectedCrop.attributes.water_requirements && (
                     <div className="glass rounded-xl p-3">
                       <Droplets className="mb-1 h-4 w-4 text-chart-3" />
-                      <p className="text-xs text-muted-foreground">Row Spacing</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {selectedCrop.attributes.row_spacing.value}{" "}
-                        {selectedCrop.attributes.row_spacing.unit}
+                      <p className="text-[10px] text-muted-foreground">Water</p>
+                      <p className="text-xs font-medium text-foreground">
+                        {selectedCrop.attributes.water_requirements}
                       </p>
                     </div>
                   )}
                   {selectedCrop.attributes.growing_degree_days && (
                     <div className="glass rounded-xl p-3">
                       <ThermometerSun className="mb-1 h-4 w-4 text-destructive" />
-                      <p className="text-xs text-muted-foreground">Grow Days</p>
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-[10px] text-muted-foreground">Duration</p>
+                      <p className="text-xs font-medium text-foreground">
                         {selectedCrop.attributes.growing_degree_days}
                       </p>
                     </div>
                   )}
                 </div>
+
+                {/* Season badge */}
+                {selectedCrop.attributes.season && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Season: </span>
+                    {selectedCrop.attributes.season}
+                  </p>
+                )}
+
+                {/* Tags */}
                 {selectedCrop.attributes.tags_array?.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {selectedCrop.attributes.tags_array.map((tag) => (
@@ -256,6 +328,46 @@ export function Navbar() {
                     ))}
                   </div>
                 )}
+
+                {/* Market Prices */}
+                <div className="mt-4">
+                  <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <TrendingUp className="h-4 w-4 text-chart-5" />
+                    Current Mandi Prices
+                    {priceLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                  </h4>
+                  {!priceLoading && priceData.length > 0 && (
+                    <div className="overflow-hidden rounded-xl border border-border/40">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-border/40 bg-muted/30">
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">Market</th>
+                            <th className="px-3 py-2 text-left font-medium text-muted-foreground">State</th>
+                            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Min</th>
+                            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Max</th>
+                            <th className="px-3 py-2 text-right font-medium text-primary">Modal (₹/q)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {priceData.map((p, i) => (
+                            <tr key={i} className="border-b border-border/20 last:border-0 hover:bg-primary/5">
+                              <td className="px-3 py-2 text-foreground">{p.market}</td>
+                              <td className="px-3 py-2 text-muted-foreground">{p.state}</td>
+                              <td className="px-3 py-2 text-right text-muted-foreground">₹{Number(p.min_price).toLocaleString("en-IN")}</td>
+                              <td className="px-3 py-2 text-right text-muted-foreground">₹{Number(p.max_price).toLocaleString("en-IN")}</td>
+                              <td className="px-3 py-2 text-right font-semibold text-primary">₹{Number(p.modal_price).toLocaleString("en-IN")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {!priceLoading && priceData.length === 0 && (
+                    <p className="rounded-xl border border-border/30 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                      No live price data available for this crop right now.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -266,17 +378,21 @@ export function Navbar() {
                   <button
                     key={crop.id}
                     type="button"
-                    onClick={() => setSelectedCrop(crop)}
+                    onClick={() => handleSelectCrop(crop)}
                     className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary/5"
                   >
                     {crop.attributes.main_image_path ? (
                       <img
-                        src={crop.attributes.main_image_path || "/placeholder.svg"}
+                        src={crop.attributes.main_image_path}
                         alt={crop.attributes.name}
-                        className="h-10 w-10 rounded-lg object-cover"
+                        className="h-10 w-10 flex-shrink-0 rounded-lg object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=80&q=60";
+                        }}
                       />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
                         <Sprout className="h-5 w-5 text-primary" />
                       </div>
                     )}

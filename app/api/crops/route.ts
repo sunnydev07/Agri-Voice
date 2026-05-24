@@ -1,31 +1,429 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Comprehensive built-in crop database — no external API required.
+// Images use Unsplash Source (free, no key).
+const CROPS = [
+  {
+    id: "rice",
+    name: "Rice",
+    scientificName: "Oryza sativa",
+    description: "A staple cereal grain and the most widely consumed food crop for a large part of the world's human population, especially in Asia.",
+    sun: "Full Sun",
+    sowing: "Transplanting / Direct seeding",
+    rowSpacing: "20 cm",
+    growDays: "90–150 days",
+    water: "High (flooded paddies)",
+    season: "Kharif (June–November)",
+    tags: ["cereal", "staple", "kharif", "grain", "paddy"],
+    image: "https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Rice",
+    priceKeyword: "Rice",
+  },
+  {
+    id: "wheat",
+    name: "Wheat",
+    scientificName: "Triticum aestivum",
+    description: "A grass widely cultivated for its seed, a cereal grain that is a worldwide staple food. It is the leading source of vegetable protein in human food.",
+    sun: "Full Sun",
+    sowing: "Direct seeding (drill sowing)",
+    rowSpacing: "22 cm",
+    growDays: "120–150 days",
+    water: "Moderate",
+    season: "Rabi (October–March)",
+    tags: ["cereal", "staple", "rabi", "grain"],
+    image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Wheat",
+    priceKeyword: "Wheat",
+  },
+  {
+    id: "maize",
+    name: "Maize (Corn)",
+    scientificName: "Zea mays",
+    description: "A large grain plant first domesticated by indigenous peoples in southern Mexico. It is a major staple food and used as animal feed and in industrial processes.",
+    sun: "Full Sun",
+    sowing: "Direct seeding",
+    rowSpacing: "60–75 cm",
+    growDays: "70–100 days",
+    water: "Moderate",
+    season: "Kharif & Rabi",
+    tags: ["cereal", "kharif", "grain", "fodder"],
+    image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Maize",
+    priceKeyword: "Maize",
+  },
+  {
+    id: "tomato",
+    name: "Tomato",
+    scientificName: "Solanum lycopersicum",
+    description: "An edible berry of the tomato plant, commonly used as a vegetable in cooking. It is one of the most popular garden vegetables worldwide.",
+    sun: "Full Sun",
+    sowing: "Transplanting (seedlings)",
+    rowSpacing: "45–60 cm",
+    growDays: "60–85 days",
+    water: "Moderate–High",
+    season: "Year-round (varies by region)",
+    tags: ["vegetable", "fruit", "kharif", "rabi", "garden"],
+    image: "https://images.unsplash.com/photo-1546470427-f5baa492fa62?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Tomato",
+    priceKeyword: "Tomato",
+  },
+  {
+    id: "potato",
+    name: "Potato",
+    scientificName: "Solanum tuberosum",
+    description: "A starchy root vegetable and one of the world's most important food crops. It is the world's fourth-largest food crop after maize, wheat and rice.",
+    sun: "Full Sun",
+    sowing: "Seed tubers",
+    rowSpacing: "60 cm",
+    growDays: "70–120 days",
+    water: "Moderate",
+    season: "Rabi (October–March)",
+    tags: ["vegetable", "tuber", "rabi", "staple"],
+    image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Potato",
+    priceKeyword: "Potato",
+  },
+  {
+    id: "onion",
+    name: "Onion",
+    scientificName: "Allium cepa",
+    description: "A vegetable that is the most widely cultivated species of the genus Allium. Its close relatives include garlic, shallot, leek, and chives.",
+    sun: "Full Sun",
+    sowing: "Transplanting / Direct seeding",
+    rowSpacing: "15 cm",
+    growDays: "100–175 days",
+    water: "Moderate",
+    season: "Rabi (October–March)",
+    tags: ["vegetable", "bulb", "rabi", "spice"],
+    image: "https://images.unsplash.com/photo-1518977956812-cd3dbadaaf31?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Onion",
+    priceKeyword: "Onion",
+  },
+  {
+    id: "sugarcane",
+    name: "Sugarcane",
+    scientificName: "Saccharum officinarum",
+    description: "A tropical grass used for sugar production. It is the world's largest crop by production quantity. Bagasse, the fibre that remains after juice extraction, is used as biofuel.",
+    sun: "Full Sun",
+    sowing: "Stem cuttings (setts)",
+    rowSpacing: "90 cm",
+    growDays: "12–18 months",
+    water: "High",
+    season: "Planted year-round in tropics",
+    tags: ["cash crop", "sugar", "tropical", "biofuel"],
+    image: "https://images.unsplash.com/photo-1594735081194-4b5e1a3a0a7f?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Sugarcane",
+    priceKeyword: "Sugarcane",
+  },
+  {
+    id: "soybean",
+    name: "Soybean",
+    scientificName: "Glycine max",
+    description: "A species of legume native to East Asia, widely grown for its edible bean which has numerous uses. It is an important source of protein and oil.",
+    sun: "Full Sun",
+    sowing: "Direct seeding",
+    rowSpacing: "45 cm",
+    growDays: "75–120 days",
+    water: "Moderate",
+    season: "Kharif (June–October)",
+    tags: ["legume", "oilseed", "protein", "kharif"],
+    image: "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Soybean",
+    priceKeyword: "Soyabean",
+  },
+  {
+    id: "cotton",
+    name: "Cotton",
+    scientificName: "Gossypium hirsutum",
+    description: "A soft, fluffy staple fiber that grows in a boll around the seeds of the cotton plants. It is the most widely used natural fiber in clothing today.",
+    sun: "Full Sun",
+    sowing: "Direct seeding",
+    rowSpacing: "60–90 cm",
+    growDays: "150–180 days",
+    water: "Moderate",
+    season: "Kharif (April–October)",
+    tags: ["cash crop", "fiber", "kharif", "textile"],
+    image: "https://images.unsplash.com/photo-1601055903647-ddf1ee9701b7?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Cotton",
+    priceKeyword: "Cotton",
+  },
+  {
+    id: "mustard",
+    name: "Mustard",
+    scientificName: "Brassica juncea",
+    description: "An important oilseed crop grown extensively in India. The seeds are used for oil extraction and the leaves are consumed as a leafy vegetable.",
+    sun: "Full Sun",
+    sowing: "Direct seeding (broadcast)",
+    rowSpacing: "30 cm",
+    growDays: "90–110 days",
+    water: "Low–Moderate",
+    season: "Rabi (October–February)",
+    tags: ["oilseed", "rabi", "spice", "mustard oil"],
+    image: "https://images.unsplash.com/photo-1585320806297-9794b3e4aaae?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Indian_mustard",
+    priceKeyword: "Mustard",
+  },
+  {
+    id: "groundnut",
+    name: "Groundnut (Peanut)",
+    scientificName: "Arachis hypogaea",
+    description: "A legume crop grown mainly for its edible seeds. It is widely grown in the tropics and subtropics, important to both small and large commercial producers.",
+    sun: "Full Sun",
+    sowing: "Direct seeding",
+    rowSpacing: "30 cm",
+    growDays: "90–130 days",
+    water: "Moderate",
+    season: "Kharif (June–October)",
+    tags: ["legume", "oilseed", "kharif", "nut"],
+    image: "https://images.unsplash.com/photo-1567892737950-30c4db37b18b?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Peanut",
+    priceKeyword: "Groundnut",
+  },
+  {
+    id: "chilli",
+    name: "Chilli Pepper",
+    scientificName: "Capsicum annuum",
+    description: "The fruit of plants from the genus Capsicum, members of the nightshade family. It is used for their pungency as a spice and in food preparation.",
+    sun: "Full Sun",
+    sowing: "Transplanting (seedlings)",
+    rowSpacing: "45–60 cm",
+    growDays: "70–90 days",
+    water: "Moderate",
+    season: "Kharif & Rabi",
+    tags: ["spice", "vegetable", "cash crop", "pepper"],
+    image: "https://images.unsplash.com/photo-1528826007177-f38517ce9a8a?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Chili_pepper",
+    priceKeyword: "Chilli",
+  },
+  {
+    id: "turmeric",
+    name: "Turmeric",
+    scientificName: "Curcuma longa",
+    description: "A flowering plant of the ginger family whose rhizomes are used in cooking. It is a key ingredient in many Asian dishes and prized for its medicinal properties.",
+    sun: "Partial–Full Sun",
+    sowing: "Rhizome pieces",
+    rowSpacing: "25–30 cm",
+    growDays: "8–9 months",
+    water: "High",
+    season: "Kharif (May–June planting)",
+    tags: ["spice", "medicinal", "kharif", "rhizome"],
+    image: "https://images.unsplash.com/photo-1615485500704-8e990f9900f7?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Turmeric",
+    priceKeyword: "Turmeric",
+  },
+  {
+    id: "coconut",
+    name: "Coconut",
+    scientificName: "Cocos nucifera",
+    description: "A member of the palm tree family and the only living species of the genus Cocos. It provides food, fuel, cosmetics, folk medicine and building materials.",
+    sun: "Full Sun",
+    sowing: "Seedling transplanting",
+    rowSpacing: "7.5 m",
+    growDays: "6–10 years to mature",
+    water: "Moderate–High",
+    season: "Perennial (tropical)",
+    tags: ["tree crop", "perennial", "tropical", "oilseed"],
+    image: "https://images.unsplash.com/photo-1580984969071-a8da5656c2fb?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Coconut",
+    priceKeyword: "Coconut",
+  },
+  {
+    id: "banana",
+    name: "Banana",
+    scientificName: "Musa acuminata",
+    description: "An elongated, edible fruit produced by several kinds of large herbaceous flowering plants in the genus Musa. It is one of the most popular fruits worldwide.",
+    sun: "Full Sun",
+    sowing: "Suckers / tissue culture plantlets",
+    rowSpacing: "1.8 m",
+    growDays: "9–12 months",
+    water: "High",
+    season: "Perennial (tropical)",
+    tags: ["fruit", "perennial", "tropical", "cash crop"],
+    image: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Banana",
+    priceKeyword: "Banana",
+  },
+  {
+    id: "mango",
+    name: "Mango",
+    scientificName: "Mangifera indica",
+    description: "A juicy stone fruit belonging to the genus Mangifera, commonly known as the king of fruits in India. It is the national fruit of India.",
+    sun: "Full Sun",
+    sowing: "Grafted seedlings",
+    rowSpacing: "8–10 m",
+    growDays: "3–5 years (first bearing)",
+    water: "Low–Moderate",
+    season: "Summer (March–June harvest)",
+    tags: ["fruit", "tree crop", "tropical", "cash crop"],
+    image: "https://images.unsplash.com/photo-1553279768-865429fa0078?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Mango",
+    priceKeyword: "Mango",
+  },
+  {
+    id: "garlic",
+    name: "Garlic",
+    scientificName: "Allium sativum",
+    description: "A species of bulbous flowering plant in the genus Allium. Its close relatives include the onion, shallot, leek, chive and Chinese onion.",
+    sun: "Full Sun",
+    sowing: "Cloves",
+    rowSpacing: "15 cm",
+    growDays: "90–150 days",
+    water: "Moderate",
+    season: "Rabi (October–November planting)",
+    tags: ["vegetable", "spice", "bulb", "rabi"],
+    image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Garlic",
+    priceKeyword: "Garlic",
+  },
+  {
+    id: "ginger",
+    name: "Ginger",
+    scientificName: "Zingiber officinale",
+    description: "A flowering plant whose rhizome, ginger root, is widely used as a spice and folk medicine. It is one of the most heavily consumed dietary condiments in the world.",
+    sun: "Partial Shade",
+    sowing: "Rhizome pieces",
+    rowSpacing: "20–25 cm",
+    growDays: "8–10 months",
+    water: "High",
+    season: "April–May planting",
+    tags: ["spice", "medicinal", "rhizome", "cash crop"],
+    image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Ginger",
+    priceKeyword: "Ginger",
+  },
+  {
+    id: "lentil",
+    name: "Lentil (Masoor)",
+    scientificName: "Lens culinaris",
+    description: "An edible legume known for its lens-shaped seeds. It is a bushy annual plant, grown for its lens-shaped seeds and among the best sources of plant protein.",
+    sun: "Full Sun",
+    sowing: "Direct seeding",
+    rowSpacing: "25–30 cm",
+    growDays: "80–110 days",
+    water: "Low",
+    season: "Rabi (October–November)",
+    tags: ["legume", "pulse", "rabi", "protein"],
+    image: "https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Lentil",
+    priceKeyword: "Masoor Dal",
+  },
+  {
+    id: "chickpea",
+    name: "Chickpea (Chana)",
+    scientificName: "Cicer arietinum",
+    description: "A legume of the family Fabaceae and the most important pulse crop in the Indian subcontinent. It is a good source of protein, carbohydrates and fibre.",
+    sun: "Full Sun",
+    sowing: "Direct seeding",
+    rowSpacing: "30–45 cm",
+    growDays: "90–120 days",
+    water: "Low",
+    season: "Rabi (October–November)",
+    tags: ["legume", "pulse", "rabi", "protein", "chana"],
+    image: "https://images.unsplash.com/photo-1612187804035-dc311ad7b7a7?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Chickpea",
+    priceKeyword: "Gram",
+  },
+  {
+    id: "cumin",
+    name: "Cumin",
+    scientificName: "Cuminum cyminum",
+    description: "A flowering plant in the family Apiaceae whose seeds are used in the cuisines of many cultures. India is the world's largest producer of cumin.",
+    sun: "Full Sun",
+    sowing: "Direct seeding (broadcast)",
+    rowSpacing: "25 cm",
+    growDays: "100–120 days",
+    water: "Low",
+    season: "Rabi (October–November)",
+    tags: ["spice", "rabi", "seed spice", "jeera"],
+    image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&q=80",
+    wikiUrl: "https://en.wikipedia.org/wiki/Cumin",
+    priceKeyword: "Cumin Seed",
+  },
+];
+
+export type CropRecord = typeof CROPS[number];
+
 export async function GET(request: NextRequest) {
-  const query = request.nextUrl.searchParams.get("q");
+  const query = request.nextUrl.searchParams.get("q")?.trim().toLowerCase();
 
   if (!query) {
-    return NextResponse.json(
-      { error: "Search query is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ data: [], total: 0 });
   }
 
+  // Case-insensitive multi-field search
+  const matched = CROPS.filter((crop) => {
+    return (
+      crop.name.toLowerCase().includes(query) ||
+      crop.scientificName.toLowerCase().includes(query) ||
+      crop.description.toLowerCase().includes(query) ||
+      crop.tags.some((t) => t.toLowerCase().includes(query)) ||
+      crop.season.toLowerCase().includes(query) ||
+      crop.priceKeyword.toLowerCase().includes(query)
+    );
+  });
+
+  // Try to augment with live OpenFarm data (best-effort, non-blocking)
+  let openFarmData: Record<string, unknown>[] = [];
   try {
-    const res = await fetch(
-      `https://openfarm.cc/api/v1/crops?filter=${encodeURIComponent(query)}`
+    const ofRes = await fetch(
+      `https://openfarm.cc/api/v1/crops?filter=${encodeURIComponent(query)}`,
+      { signal: AbortSignal.timeout(3000) }
     );
-
-    if (!res.ok) {
-      throw new Error(`OpenFarm API error: ${res.status}`);
+    if (ofRes.ok) {
+      const ofJson = await ofRes.json();
+      openFarmData = ofJson?.data || [];
     }
-
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error("Crop search error:", error);
-    return NextResponse.json(
-      { error: "Failed to search crops" },
-      { status: 500 }
-    );
+  } catch {
+    // Ignore — built-in DB is primary source
   }
+
+  // Shape built-in crops into the response format
+  const results = matched.map((crop) => ({
+    id: crop.id,
+    source: "local",
+    attributes: {
+      name: crop.name,
+      scientificName: crop.scientificName,
+      description: crop.description,
+      sun_requirements: crop.sun,
+      sowing_method: crop.sowing,
+      row_spacing: crop.rowSpacing,
+      growing_degree_days: crop.growDays,
+      water_requirements: crop.water,
+      season: crop.season,
+      main_image_path: crop.image,
+      wiki_url: crop.wikiUrl,
+      price_keyword: crop.priceKeyword,
+      tags_array: crop.tags,
+    },
+  }));
+
+  // Append any unique OpenFarm extras (by name, avoid duplicates)
+  const localNames = new Set(matched.map((c) => c.name.toLowerCase()));
+  for (const of_crop of openFarmData) {
+    const attrs = (of_crop as { attributes?: { name?: string } }).attributes;
+    if (attrs?.name && !localNames.has(attrs.name.toLowerCase())) {
+      results.push({
+        id: String((of_crop as { id?: unknown }).id || `of-${Math.random()}`),
+        source: "openfarm",
+        attributes: {
+          name: attrs.name,
+          scientificName: "",
+          description: (attrs as { description?: string }).description || "",
+          sun_requirements: (attrs as { sun_requirements?: string }).sun_requirements || "",
+          sowing_method: (attrs as { sowing_method?: string }).sowing_method || "",
+          row_spacing: (attrs as { row_spacing?: string }).row_spacing || "",
+          growing_degree_days: String((attrs as { growing_degree_days?: unknown }).growing_degree_days || ""),
+          water_requirements: "",
+          season: "",
+          main_image_path: (attrs as { main_image_path?: string }).main_image_path || null,
+          wiki_url: "",
+          price_keyword: attrs.name,
+          tags_array: (attrs as { tags_array?: string[] }).tags_array || [],
+        },
+      });
+    }
+  }
+
+  return NextResponse.json({ data: results, total: results.length });
 }

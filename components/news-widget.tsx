@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   ExternalLink,
   Loader2,
+  MapPin,
   Newspaper,
   RefreshCw,
 } from "lucide-react";
@@ -18,18 +19,33 @@ interface NewsArticle {
   image_url: string | null;
 }
 
+interface GeoLocation {
+  region: string;
+  country: string;
+  countryCode: string;
+}
+
 export function NewsWidget() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [location, setLocation] = useState<GeoLocation | null>(null);
+  // Store coordinates so manual refresh reuses the same position
+  const coordsRef = useRef<{ lat: number; lon: number } | null>(null);
 
-  const fetchNews = useCallback(async () => {
+  const fetchNews = useCallback(async (lat?: number, lon?: number) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/news");
+      const params = new URLSearchParams();
+      if (lat !== undefined && lon !== undefined) {
+        params.set("lat", lat.toString());
+        params.set("lon", lon.toString());
+      }
+      const res = await fetch(`/api/news?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setArticles(data.results || []);
+      if (data._location) setLocation(data._location);
       setError(null);
     } catch {
       setError("Could not load news");
@@ -39,7 +55,29 @@ export function NewsWidget() {
   }, []);
 
   useEffect(() => {
-    fetchNews();
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          coordsRef.current = {
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+          };
+          fetchNews(pos.coords.latitude, pos.coords.longitude);
+        },
+        // On denial, fall back to no-location fetch (global agri news)
+        () => fetchNews()
+      );
+    } else {
+      fetchNews();
+    }
+  }, [fetchNews]);
+
+  const handleRefresh = useCallback(() => {
+    if (coordsRef.current) {
+      fetchNews(coordsRef.current.lat, coordsRef.current.lon);
+    } else {
+      fetchNews();
+    }
   }, [fetchNews]);
 
   return (
@@ -51,15 +89,23 @@ export function NewsWidget() {
             Agri News & Schemes
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={fetchNews}
-          disabled={loading}
-          className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-          aria-label="Refresh news"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {location && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              <span>{location.region || location.country}</span>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+            aria-label="Refresh news"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {loading && (

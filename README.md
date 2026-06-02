@@ -49,7 +49,7 @@ NEWS_API_KEY=your_newsdata_key
 npm run dev
 ```
 
-Open http://localhost:3000
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Available Scripts
 

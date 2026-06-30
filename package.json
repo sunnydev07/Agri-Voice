@@ -1,5 +1,5 @@
 {
-  "name": "my-project",
+  "name": "agri-voice",
   "version": "0.1.0",
   "description": "Voice-assisted agriculture support app built with Next.js.",
   "private": true,

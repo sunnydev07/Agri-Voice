@@ -1,77 +1,77 @@
-# Agri-Voice
+# 🌾 Agri-Voice — AI-Powered Smart Farming Platform
 
-Agri-Voice is a Next.js farming assistant dashboard focused on practical tools for farmers: crop lookup, market prices, weather insights, AI chat, disease scanning, and community interactions.
+[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0-blue?style=flat-square&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
 
-## Features
+**Agri-Voice** is an AI-powered smart farming platform designed for modern agriculture. It provides farmers with voice-assisted AI guidance, real-time mandi market rates, AI crop disease scanning, weather insights, micro-payments, and a community hub for peer-to-peer collaboration.
 
-- **Dashboard home** with quick actions and farming summary cards
-- **Voice Assistant** with multilingual input, speech synthesis, and image-assisted chat
-- **Crop Disease Scanner** using AI image analysis and treatment/prevention guidance
-- **Market Prices** view with filters, search, sorting, and fallback mandi data
-- **Crop Search** with local crop database + optional OpenFarm augmentation
-- **Weather Widget** with OpenWeatherMap support and Open-Meteo fallback
-- **News Feed** with geolocation-aware query and fallback agriculture headlines
-- **Community Hub** tabs for chat, payments, bonds, gallery, and calls
+---
 
-## Tech Stack
+## ✨ Key Features
 
-- Next.js 16 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS
+- 🎙️ **Multilingual Voice Assistant**: Voice-activated AI powered by Google Gemini for real-time agricultural Q&A in local languages.
+- 🔬 **AI Crop Disease Scanner**: Instant vision-based crop disease diagnosis with actionable treatment and prevention plans.
+- 📊 **Real-Time Mandi Prices**: Live market price lookup with search, filtering, and Mandi API fallbacks.
+- 🌦️ **Location-Aware Weather Insights**: Hyper-local weather forecasting with OpenWeatherMap & Open-Meteo fallbacks.
+- 📰 **Agri News & Market Feed**: Geolocation-tailored agricultural news updates.
+- 🤝 **Farmer Community Hub**: Peer-to-peer chat, micro-loans, WebRTC voice calls, and secure transaction tracking.
 
-## Getting Started
+---
 
-### 1) Install dependencies
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **AI Core**: Google Gemini API (Text & Vision)
+- **UI & Styling**: React 19, Tailwind CSS, Lucide Icons
+- **Integrations**: OpenWeatherMap, Open-Meteo, Mandi Data API, WebRTC
+
+---
+
+## 🚦 Quick Start
+
+### 1. Installation
 
 ```bash
+git clone https://github.com/sunnydev07/Agri-Voice.git
+cd Agri-Voice
 npm install --legacy-peer-deps
 ```
 
-### 2) Configure environment variables
+### 2. Environment Setup
 
-Create a `.env.local` file in the project root:
+Create `.env.local` in the project root:
 
 ```env
-GEMINI_API_KEY=your_gemini_key
+GEMINI_API_KEY=your_gemini_api_key
 WEATHER_API_KEY=your_openweathermap_key
 DATA_GOV_API_KEY=your_data_gov_key
-NEWS_API_KEY=your_newsdata_key
+NEWS_API_KEY=your_news_api_key
 ```
 
-> Notes:
-> - `GEMINI_API_KEY` is needed for AI chat and disease scan.
-> - Other keys are optional because several APIs include fallback data paths.
-
-### 3) Run the app
+### 3. Run Locally
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Available Scripts
+---
 
-- `npm run dev` – start development server
-- `npm run build` – create production build
-- `npm run start` – run production server
-- `npm run lint` – run linting (`eslint .`)
+## 🗺️ Key Application Routes
 
-## Key Routes
+| Route | Purpose |
+|---|---|
+| `/` | Main Dashboard & Activity Summary |
+| `/voice-assistant` | Multilingual AI Voice Assistant |
+| `/disease-scanner` | Visual Crop Disease Diagnostic Tool |
+| `/market-prices` | Live Commodity & Mandi Rate Lookup |
+| `/community` | Farmer Peer-to-Peer Hub & Micro-Services |
 
-- `/` – Dashboard
-- `/voice-assistant` – Multilingual AI assistant
-- `/disease-scanner` – Crop image diagnosis
-- `/market-prices` – Mandi rates
-- `/community` – Farmer community hub
+---
 
-## API Endpoints
+## 📄 License
 
-- `/api/chat`
-- `/api/disease-scan`
-- `/api/crops`
-- `/api/market-prices`
-- `/api/weather`
-- `/api/news`
-- `/api/community/*`
+Distributed under the MIT License. Created by [Sunny Kumar Dev](https://github.com/sunnydev07).
